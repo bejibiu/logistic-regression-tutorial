@@ -7,8 +7,16 @@ class LogisticRegression:
         self.w = None
         self.loss_history = None
 
-    def train(self, X, y, learning_rate=1e-3, reg=1e-5, num_iters=100,
-              batch_size=200, verbose=False):
+    def train(
+            self,
+            X,
+            y,
+            learning_rate=1e-3,
+            reg=1e-5,
+            num_iters=100,
+            batch_size=200,
+            verbose=False,
+    ):
         """
         Train this classifier using stochastic gradient descent.
 
@@ -34,7 +42,7 @@ class LogisticRegression:
 
         # Run stochastic gradient descent to optimize W
         self.loss_history = []
-        for it in xrange(num_iters):
+        for it in range(num_iters):
             #########################################################################
             # TODO:                                                                 #
             # Sample batch_size elements from the training data and their           #
@@ -46,8 +54,10 @@ class LogisticRegression:
             # Hint: Use np.random.choice to generate indices. Sampling with         #
             # replacement is faster than sampling without replacement.              #
             #########################################################################
+            batch_index = np.random.choice(X.shape[0], batch_size)
 
-
+            X_batch = X[batch_index]
+            y_batch = y[batch_index]
             #########################################################################
             #                       END OF YOUR CODE                                #
             #########################################################################
@@ -60,14 +70,13 @@ class LogisticRegression:
             # TODO:                                                                 #
             # Update the weights using the gradient and the learning rate.          #
             #########################################################################
-
-
+            self.w -= learning_rate * gradW
             #########################################################################
             #                       END OF YOUR CODE                                #
             #########################################################################
 
             if verbose and it % 100 == 0:
-                print 'iteration %d / %d: loss %f' % (it, num_iters, loss)
+                print("iteration %d / %d: loss %f" % (it, num_iters, loss))
 
         return self
 
@@ -91,9 +100,8 @@ class LogisticRegression:
         # Implement this method. Store the probabilities of classes in y_proba.   #
         # Hint: It might be helpful to use np.vstack and np.sum                   #
         ###########################################################################
-
-
-
+        a = LogisticRegression.sigmoid(X.dot(self.w))
+        y_proba = np.vstack((1 - a, a)).T
         ###########################################################################
         #                           END OF YOUR CODE                              #
         ###########################################################################
@@ -117,7 +125,7 @@ class LogisticRegression:
         # Implement this method. Store the predicted labels in y_pred.            #
         ###########################################################################
         y_proba = self.predict_proba(X, append_bias=True)
-        y_pred = ...
+        y_pred = np.argmax(y_proba, axis=1)
 
         ###########################################################################
         #                           END OF YOUR CODE                              #
@@ -138,17 +146,30 @@ class LogisticRegression:
         loss = 0
         # Compute loss and gradient. Your code should not contain python loops.
 
+        a = LogisticRegression.sigmoid(X_batch.dot(self.w))
+        loss = LogisticRegression.logloss(y_batch, a)
 
         # Right now the loss is a sum over all training examples, but we want it
         # to be an average instead so we divide by num_train.
         # Note that the same thing must be done with gradient.
-
+        loss = np.mean(loss)
+        dw = X_batch.T.dot(a - y_batch)
+        dw = dw / X_batch.shape[0]
 
         # Add regularization to the loss and gradient.
         # Note that you have to exclude bias term in regularization.
 
-
+        loss += reg / 2 * np.sum(self.w[:-1] ** 2)  # L2 - regularization https://clck.ru/NZfJm
+        dw[:-1] += self.w[:-1] * reg
         return loss, dw
+
+    @staticmethod
+    def sigmoid(m):
+        return 1 / (1 + np.exp(-m))
+
+    @staticmethod
+    def logloss(y, a):
+        return -(y * np.log(a) + (1 - y) * np.log(1 - a))
 
     @staticmethod
     def append_biases(X):
